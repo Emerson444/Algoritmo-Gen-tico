@@ -1,34 +1,33 @@
-import random
-
-distance = [
-    [0, 2, 9, 10],
-    [2, 0, 7, 1],
-    [9, 7, 0, 6],
-    [10, 1, 6, 0]
-]
-
+coords = load_tsp("att48.tsp")
+distance = create_distance_matrix(coords)
 num_cities = len(distance)
+import math
 
-def random_solution():
-    sol = list(range(num_cities))
-    random.shuffle(sol)
-    return sol
+def load_tsp(path):
+    coords = []
+    with open(path, "r") as f:
+        read = False
+        for line in f:
+            line = line.strip()
+            if line == "NODE_COORD_SECTION":
+                read = True
+                continue
+            if line == "EOF":
+                break
+            if read:
+                parts = line.split()
+                if len(parts) == 3:
+                    _, x, y = parts
+                    coords.append((float(x), float(y)))
+    return coords
 
-def total_distance(solution):
-    dist = 0
-    for i in range(num_cities):
-        dist += distance[solution[i]][solution[(i+1) % num_cities]]
-    return dist
+def dist(a, b):
+    return math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
 
-def selection(population):
-    population.sort(key=total_distance)
-    return population[:2]
-
-def parents_fix(parent1,parent2):
-    cut = num_cities // 2
-    childprocess = parent1[:cut] + parent2[cut:]
-
-def mutate(solution):
-    i, j = random.sample(ranger(num_cities), 2)
-    solution[i], solution[j] = solution[j], solution[i]
-population = [random_solution() for _ in range(10)]
+def create_distance_matrix(coords):
+    n = len(coords)
+    matrix = [[0]*n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            matrix[i][j] = dist(coords[i], coords[j])
+    return matrix
