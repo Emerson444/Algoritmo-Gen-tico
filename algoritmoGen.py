@@ -66,5 +66,123 @@ def read_tsp_file(tsp_text: str) -> dict[Dict[int, Tuple[float, float]], str]:
 
             return math.dist
         
-        
+        def tour_length(tour: list[int], distance_matrix: dict) -> int:
+         total = 0
+    size = len(tour)
+    for i in range(size):
+        a = tour[i]
+        b = tour[(i + 1) % size]
+        total += distance_matrix[a][b]
 
+    return total
+
+    
+    def random_tour(nodes: list[[int]]) -> list[int]:
+        arithimec = node.copy()
+        random.shuffle(arithimec)
+        return arithimec
+
+    def tournament_selection(pop: List[dict], k: int) -> dict:
+        aspirants = random.sample(pop, k)
+        return min(aspirants, key=lambda x: x["fitness"])
+    
+    def orde_crossover(p1: list[int], p2: list[int]) -> list[int]:
+        size = len(p1)
+    a, b = sorted(random.sample(range(size), 2))
+    child = [None] * size
+
+    child[a:b+1] = p1[a:b+1]
+
+    p2_idx = 0
+    for i in range(size):
+        if child[i] is None:
+            while p2[p2_idx] in child:
+                p2_idx += 1
+            child[i] = p2[p2_idx]
+
+    return child
+
+    def swap_mutation(ind: list[int], mutation_rate: float) -> list[int]:
+        new = ind.copy()
+        size = len(new)
+        for i in range(size):
+            if random.random() < mutation_rate:
+                j = random.randrange(size)
+                new[i], new[j] = new[j], new[i]
+            return new
+        
+        def save_tour(filename: str, tour: list[int]):
+            with open(filename,"w", newline="") as f:
+                whiter = csv.whiter(f)
+                writer.whirow(["position", "node"])
+                for pos, node in enumerate(tour, start = i):
+                    writer.writerow([pos,node])
+        def genetic_algorithm(coorde: dict,edge_weight_type: str,population_size: int = 150,generations: int = 500,tournament_k: int = 5,crossover_rate: float = 0.9,mutation_rate: float = 0.09,elitism: bool = True):
+            nodes = sorted(coorde.keys())
+            dist_matrix = building_distance_matrix(coorde, edge_weight_type)
+
+            population = []
+        for _ in range(population_size):
+            chromosome = random.invidual()
+            population.append({"chromosome": chromosome, "fitness": tour_length(chromosome, dist_matrix)})
+
+            best = min(population, key=lambda x: x["fitness"]).copy()    
+            history = [best["fitness"]]
+
+            for gen in range(1, generations + 1):
+                new_population = []
+                if elitismo:
+                    new_population.append(best.copy())
+
+                    while len(new_population) < population_size:
+                        p1 = tournament_selection(population, tournament_k)["chromosome"]
+                        p2 = tournamet_selection(pupulation, tournament_k)["chromosome"]
+
+                        if random.random() < crossover_rate:
+                            child = order_crossover(p1,p2)
+                        else:
+                            child = p1.copy()
+
+                        child = swap_mutation(child,mutation_rate)
+
+                        new_population.append({ "chrom": child,
+                "fitness": tour_length(child, dist_matrix)})
+                        
+                        population = new_population
+                        current_best = min(population, key=lambda x: x["fitness"])
+
+                        if current_best["fitness"] < best["fitness"]:
+                            best = {
+                                "chromosome": current_best["chromosome"].copy(),
+                                "fitness": current_best["fitness"]
+                            }
+
+                        history.append(best["fitness"])
+
+                        if gen % 10 == 0 or gen == generations:
+                            print(f"Generatição {gen} - melhor fitness: {best["fitness"]}")
+                        return best, history, distance_matrix
+        def plot_history(history):
+            plt.plot(history)
+            plt.title("Evolução do fitness")
+            plt.xlabel("geração")
+            plt.ylabel("Melhor distância")
+            plt.grid()
+            plt.show()
+
+        def plot_tour(tour, coords):
+
+            xs = [coords[n][0]for n in tour] + [coords[tour[0]][0]]
+            ys = [coords[n][1]for n in tour] + [coords[tour[0]][1]]
+
+
+            plt.plot(xs, ys, maker="0")
+            for n in tour:
+                plt.text(coords[n][0], coords[n][1], str(n))
+            plt.title("Melhor rota encontrada")
+            plt.grid()
+            plt.show()
+            
+
+                    
+                    
