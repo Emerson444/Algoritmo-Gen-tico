@@ -167,22 +167,35 @@ def read_tsp_file(tsp_text: str) -> dict[Dict[int, Tuple[float, float]], str]:
             plt.title("Evolução do fitness")
             plt.xlabel("geração")
             plt.ylabel("Melhor distância")
-            plt.grid()
+            plt.grid(True)
             plt.show()
 
-        def plot_tour(tour, coords):
+        def plot_tour(tour: List[int], coords: dict, title=None):
+          xs = [coords[n][0] for n in tour] + [coords[tour[0]][0]]
+        ys = [coords[n][1] for n in tour] + [coords[tour[0]][1]]
+    plt.figure(figsize=(6,6))
+    plt.plot(xs, ys, marker='o')
+    for n in tour:
+        plt.text(coords[n][0], coords[n][1], str(n))
+    plt.title(title if title else "Tour")
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.grid(True)
+    plt.show()
 
-            xs = [coords[n][0]for n in tour] + [coords[tour[0]][0]]
-            ys = [coords[n][1]for n in tour] + [coords[tour[0]][1]]
+    if __name__ == "__main__":
+    
+      with open("att48.tsp", "r") as f:
+        tsp_text = f.read()
+        coorde, edge_weight_type = read_tsp_file(tsp_text)
 
-
-            plt.plot(xs, ys, maker="0")
-            for n in tour:
-                plt.text(coords[n][0], coords[n][1], str(n))
-            plt.title("Melhor rota encontrada")
-            plt.grid()
-            plt.show()
+        pop_size = 150
+        generations = 800
+        tournament_k = 5
+        croosover_rate = 0.9
+        mutation_rate = 0.08
             
+        
 
                     
                     
