@@ -1,201 +1,218 @@
 import math
 import random
-import time
-from turtle import up
 import matplotlib.pyplot as plt
 import csv
-from typing import List, Tuple, Dict
 
-def read_tsp_file(tsp_text: str) -> dict[Dict[int, Tuple[float, float]], str]:
-    linhas = [ln.strip() for ln in tsp_text.splitlines() if ln.strip() != ""]
-    coorde = {}
-    edge_weight_type = None
-    in_section = False
+def ler_tsp(texto: str):
+    linhas = [ln.strip() for ln in texto.splitlines() if ln.strip() != ""]
+    coordenadas = {}
+    tipo_distancia = None
+    lendo_secao = False
 
     for ln in linhas:
-        up_ln = ln.upper()
+        up = ln.upper()
 
         if up.startswith("EDGE_WEIGHT_TYPE"):
-            parts = ln.split(":")
-            if len(parts) > 1:
-                edge_weight_type = parts[1].strip()
+            tipo_distancia = ln.split(":")[1].strip()
+
+        if up.startswith("NODE_COORD_SECTION"):
+            lendo_secao = True
+            continue
+
+        if lendo_secao:
+            if up.startswith("EOF"):
+                break
+
+            partes = ln.split()
+            if len(partes) >= 3:
+                idx = int(partes[0])
+                x = float(partes[1])
+                y = float(partes[2])
+                coordenadas[idx] = (x, y)
+
+    return coordenadas, tipo_distancia
+
+def distancia_att(a: int, b: int, coord: dict) -> int:
+    (x1, y1) = coord[a]
+    (x2, y2) = coord[b]
+
+    dx = x1 - x2
+    dy = y1 - y2
+
+    rij = math.sqrt((dx * dx + dy * dy) / 10.0)
+    dij = math.ceil(rij)
+
+    return dij
+
+def construir_matriz_distancia(coord: dict, tipo: str):
+    cidades = sorted(coord.keys())
+    matriz = {i: {} for i in cidades}
+
+    for i in cidades:
+        for j in cidades:
+            if i == j:
+                matriz[i][j] = 0
             else:
-                edge_weight_type = ln.split()[-1].strip()
+                if tipo.upper() == "ATT":
+                    matriz[i][j] = distancia_att(i, j, coord)
+                else:
+                    dx = coord[i][0] - coord[j][0]
+                    dy = coord[i][1] - coord[j][1]
+                    matriz[i][j] = int(round(math.hypot(dx, dy)))
 
-            if up.startswith("NODE_COORD_SECTION"):
-                in_section = True
-                continue
-            if in_section:
-                if up.startswith("EOF"):
-                    break
-                parts = ln.split()
-                if len(parts) >= 3:
-                   idx = int(parts[0])
-                x = float(parts[1])
-                y = float(parts[2])
-                coorde[idx] = (x, y)
+    return matriz
 
-            return coorde, edge_weight_type
-        
-        
 
-        def att_distance(a: int, b: int, coorde: dict) -> float:
-            (x1, y1) = coorde[a]
-            (x2, y2) = coorde[b]
-            dx = x1 - x2
-            dy = y1 - y2
-            rij = math.sqrt((dx * dx + dy *dy)/10.0)
-            dij = math.ceil(rij)
-            return int(dij)
-        
-        def building_distance_matrix(coorde: dict, edge_weight_type: str):
-            n = len(coorde)
-            nodes = list(coorde.keys)
-            att_distance = {i: {} for i in nodes}
-            for i in nodes:
-                for j in nodes:
-                    if i == j:
-                        att_distance[i][j] = 0
-                    else:
-                        if edge_weight_type and edge_weight_type.upper().startswith("ATT"):
-                            math.dist[i][j] = att_distance(i, j, coorde)
-                        else:
-                            dx = coorde[i][0] - coorde[j][0]
-                            dy = coorde[i][1] - coorde[j][1]
-                            math.dist[i][j] = int(around(math.hypot(dx, dy)))
+def calcular_custo(caminho: list, matriz: dict) -> int:
+    total = 0
+    tamanho = len(caminho)
 
-            return math.dist
-        
-        def tour_length(tour: list[int], distance_matrix: dict) -> int:
-         total = 0
-    size = len(tour)
-    for i in range(size):
-        a = tour[i]
-        b = tour[(i + 1) % size]
-        total += distance_matrix[a][b]
+    for i in range(tamanho):
+        a = caminho[i]
+        b = caminho[(i + 1) % tamanho]  # circular
+        total += matriz[a][b]
 
     return total
 
-    
-    def random_tour(nodes: list[[int]]) -> list[int]:
-        arithimec = node.copy()
-        random.shuffle(arithimec)
-        return arithimec
 
-    def tournament_selection(pop: List[dict], k: int) -> dict:
-        aspirants = random.sample(pop, k)
-        return min(aspirants, key=lambda x: x["fitness"])
-    
-    def orde_crossover(p1: list[int], p2: list[int]) -> list[int]:
-        size = len(p1)
-    a, b = sorted(random.sample(range(size), 2))
-    child = [None] * size
 
-    child[a:b+1] = p1[a:b+1]
+def individuo_aleatorio(cidades: list) -> list:
+    copia = cidades.copy()
+    random.shuffle(copia)
+    return copia
 
-    p2_idx = 0
-    for i in range(size):
-        if child[i] is None:
-            while p2[p2_idx] in child:
-                p2_idx += 1
-            child[i] = p2[p2_idx]
+def selecao_torneio(populacao: list, k: int) -> dict:
+    candidatos = random.sample(populacao, k)
+    return min(candidatos, key=lambda x: x["custo"])
 
-    return child
+def crossover_ox(pai1: list, pai2: list) -> list:
+    tamanho = len(pai1)
+    filho = [None] * tamanho
 
-    def swap_mutation(ind: list[int], mutation_rate: float) -> list[int]:
-        new = ind.copy()
-        size = len(new)
-        for i in range(size):
-            if random.random() < mutation_rate:
-                j = random.randrange(size)
-                new[i], new[j] = new[j], new[i]
-            return new
-        
-        def save_tour(filename: str, tour: list[int]):
-            with open(filename,"w", newline="") as f:
-                whiter = csv.whiter(f)
-                writer.whirow(["position", "node"])
-                for pos, node in enumerate(tour, start = i):
-                    writer.writerow([pos,node])
-        def genetic_algorithm(coorde: dict,edge_weight_type: str,population_size: int = 150,generations: int = 500,tournament_k: int = 5,crossover_rate: float = 0.9,mutation_rate: float = 0.09,elitism: bool = True):
-            nodes = sorted(coorde.keys())
-            dist_matrix = building_distance_matrix(coorde, edge_weight_type)
+    a, b = sorted(random.sample(range(tamanho), 2))
 
-            population = []
-        for _ in range(population_size):
-            chromosome = random.invidual()
-            population.append({"chromosome": chromosome, "fitness": tour_length(chromosome, dist_matrix)})
+    filho[a:b+1] = pai1[a:b+1]
 
-            best = min(population, key=lambda x: x["fitness"]).copy()    
-            history = [best["fitness"]]
+    idx2 = 0
+    for i in range(tamanho):
+        if filho[i] is None:
+            while pai2[idx2] in filho:
+                idx2 += 1
+            filho[i] = pai2[idx2]
 
-            for gen in range(1, generations + 1):
-                new_population = []
-                if elitismo:
-                    new_population.append(best.copy())
+    return filho
 
-                    while len(new_population) < population_size:
-                        p1 = tournament_selection(population, tournament_k)["chromosome"]
-                        p2 = tournamet_selection(pupulation, tournament_k)["chromosome"]
+def mutacao_swap(individuo: list, taxa: float) -> list:
+    novo = individuo.copy()
+    tamanho = len(novo)
 
-                        if random.random() < crossover_rate:
-                            child = order_crossover(p1,p2)
-                        else:
-                            child = p1.copy()
+    for i in range(tamanho):
+        if random.random() < taxa:
+            j = random.randrange(tamanho)
+            novo[i], novo[j] = novo[j], novo[i]
 
-                        child = swap_mutation(child,mutation_rate)
+    return novo
 
-                        new_population.append({ "chrom": child,
-                "fitness": tour_length(child, dist_matrix)})
-                        
-                        population = new_population
-                        current_best = min(population, key=lambda x: x["fitness"])
+def algoritmo_genetico(coordenadas: dict,
+                       tipo_distancia: str,
+                       tamanho_pop=150,
+                       geracoes=500,
+                       k_torneio=5,
+                       taxa_crossover=0.9,
+                       taxa_mutacao=0.08,
+                       elitismo=True):
 
-                        if current_best["fitness"] < best["fitness"]:
-                            best = {
-                                "chromosome": current_best["chromosome"].copy(),
-                                "fitness": current_best["fitness"]
-                            }
+    cidades = sorted(coordenadas.keys())
+    matriz = construir_matriz_distancia(coordenadas, tipo_distancia)
 
-                        history.append(best["fitness"])
+    populacao = []
+    for _ in range(tamanho_pop):
+        ind = individuo_aleatorio(cidades)
+        populacao.append({
+            "caminho": ind,
+            "custo": calcular_custo(ind, matriz)
+        })
 
-                        if gen % 10 == 0 or gen == generations:
-                            print(f"Generatição {gen} - melhor fitness: {best["fitness"]}")
-                        return best, history, distance_matrix
-        def plot_history(history):
-            plt.plot(history)
-            plt.title("Evolução do fitness")
-            plt.xlabel("geração")
-            plt.ylabel("Melhor distância")
-            plt.grid(True)
-            plt.show()
+    melhor = min(populacao, key=lambda x: x["custo"]).copy()
+    historico = [melhor["custo"]]
 
-        def plot_tour(tour: List[int], coords: dict, title=None):
-          xs = [coords[n][0] for n in tour] + [coords[tour[0]][0]]
-        ys = [coords[n][1] for n in tour] + [coords[tour[0]][1]]
-    plt.figure(figsize=(6,6))
-    plt.plot(xs, ys, marker='o')
-    for n in tour:
-        plt.text(coords[n][0], coords[n][1], str(n))
-    plt.title(title if title else "Tour")
-    plt.xlabel("X")
-    plt.ylabel("Y")
-    plt.grid(True)
+    for gen in range(1, geracoes + 1):
+        nova_pop = []
+
+        if elitismo:
+            nova_pop.append(melhor.copy())
+
+        while len(nova_pop) < tamanho_pop:
+            p1 = selecao_torneio(populacao, k_torneio)["caminho"]
+            p2 = selecao_torneio(populacao, k_torneio)["caminho"]
+
+            if random.random() < taxa_crossover:
+                filho = crossover_ox(p1, p2)
+            else:
+                filho = p1.copy()
+
+            filho = mutacao_swap(filho, taxa_mutacao)
+
+            nova_pop.append({
+                "caminho": filho,
+                "custo": calcular_custo(filho, matriz)
+            })
+
+        populacao = nova_pop
+        atual = min(populacao, key=lambda x: x["custo"])
+
+        if atual["custo"] < melhor["custo"]:
+            melhor = {
+                "caminho": atual["caminho"].copy(),
+                "custo": atual["custo"]
+            }
+
+        historico.append(melhor["custo"])
+
+        if gen % 50 == 0:
+            print(f"Geração {gen} — melhor custo: {melhor['custo']}")
+
+    return melhor, historico, matriz
+
+def plotar_progresso(hist):
+    plt.plot(hist)
+    plt.title("Evolução do Custo")
+    plt.xlabel("Gerações")
+    plt.ylabel("Melhor Custo")
+    plt.grid()
     plt.show()
 
-    if __name__ == "__main__":
-    
-      with open("att48.tsp", "r") as f:
-        tsp_text = f.read()
-        coorde, edge_weight_type = read_tsp_file(tsp_text)
 
-        pop_size = 150
-        generations = 800
-        tournament_k = 5
-        croosover_rate = 0.9
-        mutation_rate = 0.08
-            
-        
+def plotar_caminho(caminho, coord):
+    xs = [coord[n][0] for n in caminho] + [coord[caminho[0]][0]]
+    ys = [coord[n][1] for n in caminho] + [coord[caminho[0]][1]]
 
-                    
-                    
+    plt.plot(xs, ys, marker='o')
+    for n in caminho:
+        plt.text(coord[n][0], coord[n][1], str(n))
+
+    plt.title("Melhor Caminho Encontrado")
+    plt.grid()
+    plt.show()
+
+if __name__ == "__main__":
+
+    with open("att48.tsp", "r") as f:
+        texto = f.read()
+
+    coordenadas, tipo = ler_tsp(texto)
+
+    melhor, historico, matriz = algoritmo_genetico(
+        coordenadas,
+        tipo,
+        tamanho_pop=150,
+        geracoes=700,
+        taxa_mutacao=0.08,
+        taxa_crossover=0.9
+    )
+
+    print("\nMelhor rota encontrada:", melhor["caminho"])
+    print("Custo:", melhor["custo"])
+
+    plotar_progresso(historico)
+    plotar_caminho(melhor["caminho"], coordenadas)
